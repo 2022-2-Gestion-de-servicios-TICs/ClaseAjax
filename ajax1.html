@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>Title</title>
+        <script src="https://code.jquery.com/jquery-3.6.1.min.js"
+                integrity="sha256-o88AwQnZB+VDvE9tvIXrMQaPlFFSUTR+nldQm1LuPXQ=" crossorigin="anonymous"></script>
+        <script>
+            $(document).ready(function () {
+                $("#btn-cargar-texto").click(function () {
+                    $.ajax({
+                        method: "GET",
+                        url: "https://3kk521ccj6.execute-api.us-east-1.amazonaws.com/prod/ws-sw2-2020-1-ajax/ej1"
+                    }).done(function (respuesta) {
+                        console.log(respuesta);
+                        $("#text_loaded").html(respuesta);
+                    }).fail(function (e) {
+                        console.error(e);
+                    });
+
+                    /*  Otra forma de usar ajax con method "GET" --> para request simples!!
+                          $.get("https://3kk521ccj6.execute-api.us-east-1.amazonaws.com/prod/ws-sw2-2020-1-ajax/ej1")
+                          .done(function (respuesta) {
+                              console.log(respuesta);
+                              $("#text_loaded").html(respuesta);
+                          })
+                          .fail(function (e) {
+                              console.error(e);
+                          });*/
+
+                });
+
+                $("#validar").click(function () {
+                    let username = document.getElementById("username").value;
+                    $.ajax({
+                        method: "POST",
+                        url: "https://1a8jit3xd4.execute-api.us-east-1.amazonaws.com/prod?accion=validar",
+                        data: {
+                            username: username
+                        }
+                    }).done(function (data) {
+                        console.log(data);
+                        $("#respuesta").html(data);
+                        if (data == "existe") {
+                            $("#respuesta2").css("color", "red");
+                            $("#respuesta2").html("username no disponible");
+                        } else {
+                            $("#respuesta2").css("color", "green");
+                            $("#respuesta2").html("username disponible");
+                        }
+                    }).fail(function (err) {
+                        console.log(err);
+                    });
+
+                    /* https://api.jquery.com/jQuery.post/ --> para post con pocos parámetros */
+                    /*     $.post("https://1a8jit3xd4.execute-api.us-east-1.amazonaws.com/prod?accion=validar", {
+                             username: username
+                         }).done(function (data) {
+                             console.log(data);
+                             $("#respuesta").html(data);
+                             if (data == "existe") {
+                                 $("#respuesta2").css("color", "red");
+                                 $("#respuesta2").html("username no disponible");
+                             } else {
+                                 $("#respuesta2").css("color", "green");
+                                 $("#respuesta2").html("username disponible");
+                             }
+                         }).fail(function (err) {
+                             console.log(err);
+                         });*/
+                });
+
+                $("#buscar").click(function () {
+                    buscarEmpleadoPorId();
+                });
+
+                $("form").submit(function () {
+                    buscarEmpleadoPorId();
+                });
+
+                function buscarEmpleadoPorId() {
+                    let id = document.getElementById("empId").value;
+                    $("#datosEmp").hide();
+                    $("#infoRes").html("");
+
+                    $.post("http://localhost:8080/buscarPorId", {id: id})
+                        .done(function (data) {
+                            console.log(data);
+                            if (data.estado == "error") {
+                                $("#infoRes").html(data.msg);
+                            } else {
+                                $("#datosEmp").show();
+                                $("#firstName").val(data.empleado.firstName);
+                                $("#lastName").val(data.empleado.lastName);
+                                $("#email").val(data.empleado.email);
+
+                            }
+                        })
+                        .fail(function (err) {
+                            console.error("sucedió un error!!", err);
+                            $("#infoRes").html(err.responseJSON.msg);
+                        });
+                    return false;
+                }
+
+                $("#listar").click(function () {
+                    let apiKey = document.getElementById("apiKey").value;
+
+                    $.ajax({
+                        url: "http://localhost:8080/listar",
+                        method: "GET",
+                        headers: {
+                            "api-key": apiKey
+                        }
+                    }).done(function (data) {
+                        console.log(data);
+                        if (data.estado == "error") {
+                            alert("el api-key no coincide");
+                        } else if (data.estado == "ok") {
+                            let employees = data.lista;
+                            employees.forEach(function (item, index) {
+                                let forHtml = "<tr>";
+                                forHtml += "<td>" + (index + 1) + "</td>";
+                                forHtml += "<td>" + item.firstName + "</td>";
+                                forHtml += "<td>" + item.lastName + "</td>";
+                                forHtml += "</tr>";
+                                $("#cuerpoTabla").append(forHtml);
+                            });
+                        }
+                    }).fail(function (err) {
+                        console.error(err);
+                    })
+                });
+            });
+        </script>
+    </head>
+    <body>
+        <h1>Demo Ajax 1</h1>
+        <button id="btn-cargar-texto">Cargar texto del servidor</button>
+        <p id="text_loaded"></p>
+        <hr>
+        <h1>Validar username</h1>
+        <input id="username"/><br/>
+        <button id="validar">Validar</button>
+        <br/>
+        <div id="respuesta"></div>
+        <div id="respuesta2"></div>
+        <hr>
+        <h1>Buscar empleado HR</h1>
+        <form onsubmit="return false;">
+            <input id="empId"/><br/>
+        </form>
+        <button id="buscar">Buscar</button>
+        <div id="datosEmp" style="display: none;">
+            <label>First name</label>
+            <input id="firstName" disabled/><br/>
+            <label>Last name</label>
+            <input id="lastName" disabled/><br/>
+            <label>Email</label>
+            <input id="email" disabled/><br/>
+        </div>
+        <div id="infoRes" style="color:red"></div>
+        <hr>
+        <h1>Listar empleados HR</h1>
+        <label>Api-key: </label><input id="apiKey"/><br/>
+        <button id="listar">Buscar</button>
+        <table>
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>first name</th>
+                    <th>last name</th>
+                </tr>
+            </thead>
+            <tbody id="cuerpoTabla">
+
+            </tbody>
+        </table>
+    </body>
+</html>
